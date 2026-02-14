@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AppCord</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="servers-sidebar">
+      <div class="server-icon home" onclick="showFriends()">A</div>
+      <div class="server-divider"></div>
+      <div id="servers-list"></div>
+      <div class="server-icon add" onclick="createServer()">+</div>
+      <div class="server-icon" onclick="openJoinServer()" title="Entrar em um Servidor" style="background: #3ba55d; font-size: 24px;">→</div>
+    </div>
+    
+    <div class="channels-sidebar" id="channels-sidebar">
+      <div class="server-header" style="position: relative;">
+        <h3 id="server-name">AppCord</h3>
+        <button class="server-settings" id="server-settings-btn" title="Configurações do Servidor" style="display: none;">⚙️</button>
+      </div>
+      <div class="channels-list" id="channels-content">
+        <div class="channel-category">CANAIS DE TEXTO</div>
+        <div class="channel-actions">
+          <button onclick="createChannel()">+ Criar Canal</button>
+        </div>
+        <div id="channels-list"></div>
+      </div>
+      <div class="user-panel">
+        <div class="voice-controls" id="voice-controls" style="display: none;">
+          <button class="voice-btn" id="mic-btn" onclick="toggleMic()" title="Microfone">🎙️</button>
+        </div>
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar-display"></div>
+          <span id="username"></span>
+          <button class="user-settings-btn" onclick="openUserSettings()" title="Configurações">⚙️</button>
+        </div>
+        <button onclick="logout()">Sair</button>
+      </div>
+    </div>
+    
+    <div class="chat-area" id="chat-area">
+      <div class="chat-header">
+        <h3 id="channel-name"># geral</h3>
+      </div>
+      <div class="messages-container" id="messages"></div>
+      <div class="message-input-container">
+        <input type="text" id="message-input" placeholder="Enviar mensagem..." onkeypress="handleMessageKeyPress(event)" oninput="handleMentionInput(event)">
+        <div id="mention-suggestions" class="mention-suggestions" style="display: none;"></div>
+        <button onclick="sendMessage()">Enviar</button>
+      </div>
+    </div>
+    
+    <div class="members-sidebar" id="members-sidebar" style="display: none;">
+      <div class="members-header">Membros</div>
+      <div class="members-list" id="members-list"></div>
+    </div>
+  </div>
+
+  <div id="server-context-menu" class="context-menu" style="display: none;">
+    <div class="context-menu-item" onclick="openServerSettings()">Configurações do Servidor</div>
+    <div class="context-menu-item" onclick="changeServerIcon()">Alterar Ícone</div>
+    <div class="context-menu-divider"></div>
+    <div class="context-menu-item danger" onclick="leaveServer()">Sair do Servidor</div>
+  </div>
+
+  <div id="inviteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Convidar para o Servidor</h2>
+        <button class="modal-close" onclick="closeModal('inviteModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 12px; color: #b9bbbe;">Compartilhe este link para convidar pessoas:</p>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="invite-code" readonly style="flex: 1; background: #202225; color: #dcddde; padding: 10px; border: 1px solid #202225; border-radius: 4px;">
+          <button class="btn-primary" onclick="copyInvite()">Copiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="joinServerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Entrar em um Servidor</h2>
+        <button class="modal-close" onclick="closeModal('joinServerModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Código do Convite</label>
+        <input type="text" id="join-code-input" placeholder="Digite o código do convite">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('joinServerModal')">Cancelar</button>
+        <button class="btn-primary" onclick="joinServerWithCode()">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="serverModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Criar Servidor</h2>
+        <button class="modal-close" onclick="closeModal('serverModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do Servidor</label>
+        <input type="text" id="server-name-input" placeholder="Meu Servidor">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('serverModal')">Cancelar</button>
+        <button class="btn-primary" onclick="submitCreateServer()">Criar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="channelModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Criar Canal</h2>
+        <button class="modal-close" onclick="closeModal('channelModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do Canal</label>
+        <input type="text" id="channel-name-input" placeholder="novo-canal">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('channelModal')">Cancelar</button>
+        <button class="btn-primary" onclick="submitCreateChannel()">Criar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="serverSettingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Configurações do Servidor</h2>
+        <button class="modal-close" onclick="closeModal('serverSettingsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do Servidor</label>
+        <input type="text" id="edit-server-name" placeholder="Nome do servidor">
+        
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Cargos</h3>
+        <button class="btn-primary" onclick="openCreateRole()" style="width: 100%; margin-bottom: 12px;">+ Criar Cargo</button>
+        <div id="roles-list"></div>
+        
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Membros</h3>
+        <table class="members-table">
+          <thead>
+            <tr>
+              <th>Membro</th>
+              <th>Cargo</th>
+              <th>Permissões</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="members-table-body"></tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-danger" onclick="deleteServer()">Deletar Servidor</button>
+        <button class="btn-primary" onclick="updateServerName()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="roleModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Criar Cargo</h2>
+        <button class="modal-close" onclick="closeModal('roleModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Nome do Cargo</label>
+        <input type="text" id="role-name-input" placeholder="Moderador">
+        <label>Cor do Cargo</label>
+        <input type="color" id="role-color-input" value="#5865f2">
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('roleModal')">Cancelar</button>
+        <button class="btn-primary" onclick="submitCreateRole()">Criar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="userSettingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Configurações de Usuário</h2>
+        <button class="modal-close" onclick="closeModal('userSettingsModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3 style="margin-bottom: 12px;">Perfil</h3>
+        
+        <div class="avatar-upload">
+          <label>Avatar (URL da imagem)</label>
+          <input type="text" id="edit-avatar" placeholder="https://exemplo.com/avatar.jpg">
+          <div class="avatar-preview" id="avatar-preview"></div>
+          <button class="btn-primary" onclick="updateAvatar()" style="width: 100%;">Atualizar Avatar</button>
+        </div>
+        
+        <div class="banner-upload" style="margin-top: 16px;">
+          <label>Banner (URL da imagem)</label>
+          <input type="text" id="edit-banner" placeholder="https://exemplo.com/banner.jpg">
+          <div class="banner-preview" id="banner-preview"></div>
+          <button class="btn-primary" onclick="updateBanner()" style="width: 100%;">Atualizar Banner</button>
+        </div>
+        
+        <label style="margin-top: 16px;">Bio</label>
+        <input type="text" id="edit-bio" placeholder="Conte algo sobre você...">
+        <button class="btn-primary" onclick="updateBio()" style="width: 100%; margin-top: 8px;">Atualizar Bio</button>
+        
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Conta</h3>
+        <label>Nome de Usuário</label>
+        <input type="text" id="edit-username" placeholder="Novo nome">
+        <button class="btn-primary" onclick="updateUsername()" style="width: 100%; margin-top: 8px;">Atualizar Nome</button>
+        
+        <h3 style="margin-top: 24px; margin-bottom: 12px;">Alterar Senha</h3>
+        <label>Senha Atual</label>
+        <input type="password" id="old-password" placeholder="Senha atual">
+        <label>Nova Senha</label>
+        <input type="password" id="new-password" placeholder="Nova senha">
+        <button class="btn-primary" onclick="updatePassword()" style="width: 100%; margin-top: 8px;">Atualizar Senha</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('userSettingsModal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileModal" class="modal profile-modal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
+      <div class="profile-banner" id="profile-banner">
+        <div class="profile-avatar-large" id="profile-avatar"></div>
+      </div>
+      <div class="profile-info">
+        <div class="profile-username" id="profile-username"></div>
+        <div class="profile-bio" id="profile-bio"></div>
+        <div class="profile-section">
+          <h4>Membro desde</h4>
+          <div id="profile-joined"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Bloquear menu de contexto padrão
+    document.addEventListener('contextmenu', (e) => {
+      if (!e.target.closest('.server-icon')) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    }, true);
+    
+    // Bloquear também no body
+    document.body.oncontextmenu = (e) => {
+      if (!e.target.closest('.server-icon')) {
+        e.preventDefault();
+        return false;
+      }
+    };
+  </script>
+</body>
+</html>
